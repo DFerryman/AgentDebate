@@ -120,8 +120,9 @@ Each agent entry supports:
 ## Source Code
 
 [![GitHub](https://img.shields.io/github/stars/DFerryman/AgentDebate?style=social)](https://github.com/DFerryman/AgentDebate)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/sanchaii.agent-debate-vscode?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=sanchaii.agent-debate-vscode)
 
-https://github.com/DFerryman/AgentDebate
+
 
 ## License
 

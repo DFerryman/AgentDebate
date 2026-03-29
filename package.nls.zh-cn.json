@@ -1,0 +1,21 @@
+{
+  "displayName": "Agent Debate",
+  "description": "一个用于在多个 ACP 兼容编程 Agent 之间进行结构化讨论的 VS Code 扩展。",
+  "command.openPanel": "Agent Debate: 打开面板",
+  "command.showHistory": "讨论历史",
+  "command.showLogs": "查看日志",
+  "command.showSettings": "设置",
+  "viewsContainer.title": "Agent Debate",
+  "view.name": "",
+  "config.title": "Agent Debate",
+  "config.agents.description": "参与结构化讨论的 ACP Agent。使用前请先安装并认证对应的 CLI。",
+  "config.agents.id": "稳定的 Agent 标识符。",
+  "config.agents.label": "面板中显示的标签。",
+  "config.agents.enabled": "此 Agent 是否默认参与讨论。",
+  "config.agents.command": "要启动的可执行文件。",
+  "config.agents.args": "传递给可执行文件的参数。",
+  "config.agents.env": "传递给 Agent 进程的额外环境变量。",
+  "config.defaultRounds": "默认讨论轮数（不含最终汇总轮）。",
+  "config.defaultModerator": "默认汇总 agent ID，留空则自动选第一个成功启动的 agent。",
+  "config.promptStyle": "结构化讨论使用的 Prompt 风格。"
+}

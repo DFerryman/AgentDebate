@@ -1,0 +1,21 @@
+{
+  "displayName": "Agent Debate",
+  "description": "A minimal VS Code extension for running structured discussions across multiple ACP-compatible coding agents.",
+  "command.openPanel": "Agent Debate: Open Panel",
+  "command.showHistory": "Discussion History",
+  "command.showLogs": "View Logs",
+  "command.showSettings": "Settings",
+  "viewsContainer.title": "Agent Debate",
+  "view.name": "",
+  "config.title": "Agent Debate",
+  "config.agents.description": "ACP agents that will participate in the structured discussion. Install and authenticate the corresponding CLIs before use.",
+  "config.agents.id": "Stable agent identifier.",
+  "config.agents.label": "Display label shown in the panel.",
+  "config.agents.enabled": "Whether this agent participates by default.",
+  "config.agents.command": "Executable to launch.",
+  "config.agents.args": "Arguments passed to the executable.",
+  "config.agents.env": "Extra environment variables passed to the agent process.",
+  "config.defaultRounds": "Default number of discussion rounds (excluding the final synthesis round).",
+  "config.defaultModerator": "Default moderator agent ID. Leave empty to auto-select the first successfully started agent.",
+  "config.promptStyle": "Prompt framing used for the structured debate."
+}

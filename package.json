@@ -2,7 +2,7 @@
   "name": "agent-debate-vscode",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.1.2",
+  "version": "0.1.1",
   "publisher": "sanchaii",
   "license": "MIT",
   "repository": {

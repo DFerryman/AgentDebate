@@ -684,8 +684,9 @@ export class DebatePanelController implements vscode.WebviewViewProvider {
     const enabled = getConfiguredAgents().filter((a) => a.enabled);
     this.state.availableAgents = enabled.length;
     this.state.cwd = getWorkspacePath();
-    // Populate agents list when not running so the moderator dropdown works
-    if (!this.state.running) {
+    // Populate agents list when not running so the moderator dropdown works,
+    // but only if no debate data exists (rounds with outputs to preserve).
+    if (!this.state.running && this.state.rounds.length === 0) {
       this.state.agents = enabled.map((a) => ({
         id: a.id, label: a.label, status: "idle" as const, liveOutput: "", roundOutputs: {}
       }));

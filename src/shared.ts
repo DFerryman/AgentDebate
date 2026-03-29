@@ -291,3 +291,15 @@ export function truncateText(value: string, maxLength: number): string {
 export function getPromptStyle(): string {
   return vscode.workspace.getConfiguration("agentDebate").get<string>("promptStyle", "fast-mvp");
 }
+
+export function getStartupTimeoutMs(): number {
+  return vscode.workspace.getConfiguration("agentDebate").get<number>("startupTimeoutSeconds", 60) * 1000;
+}
+
+export function getMinAgents(): number {
+  return vscode.workspace.getConfiguration("agentDebate").get<number>("minAgents", 2);
+}
+
+export function getStartupRetries(): number {
+  return vscode.workspace.getConfiguration("agentDebate").get<number>("startupRetries", 3);
+}

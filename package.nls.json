@@ -17,5 +17,8 @@
   "config.agents.env": "Extra environment variables passed to the agent process.",
   "config.defaultRounds": "Default number of discussion rounds (excluding the final synthesis round).",
   "config.defaultModerator": "Default moderator agent ID. Leave empty to auto-select the first successfully started agent.",
-  "config.promptStyle": "Prompt framing used for the structured debate."
+  "config.promptStyle": "Prompt framing used for the structured debate.",
+  "config.startupTimeoutSeconds": "Timeout in seconds for ACP agent startup (initialize + session/new). Increase if agents are slow to connect.",
+  "config.minAgents": "Minimum number of agents that must be ready before starting the debate. If fewer agents are available after all retries, the debate is aborted.",
+  "config.startupRetries": "Number of times to retry connecting failed agents before giving up. Set to 0 to disable retries."
 }

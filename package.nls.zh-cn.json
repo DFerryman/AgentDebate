@@ -17,5 +17,8 @@
   "config.agents.env": "传递给 Agent 进程的额外环境变量。",
   "config.defaultRounds": "默认讨论轮数（不含最终汇总轮）。",
   "config.defaultModerator": "默认汇总 agent ID，留空则自动选第一个成功启动的 agent。",
-  "config.promptStyle": "结构化讨论使用的 Prompt 风格。"
+  "config.promptStyle": "结构化讨论使用的 Prompt 风格。",
+  "config.startupTimeoutSeconds": "ACP Agent 启动超时时间（秒），包括 initialize 和 session/new。如果 Agent 连接较慢，可以增大此值。",
+  "config.minAgents": "开始讨论前必须就绪的最少 Agent 数量。如果重试后仍不足，讨论将被中止。",
+  "config.startupRetries": "连接失败的 Agent 重试次数。设为 0 则不重试。"
 }

@@ -22,6 +22,8 @@ const en = {
   "startup": "Startup",
   "commandNotFound": "Command not found: \"{0}\". Please check the path or install the program.",
   "commandNotInPath": "Command \"{0}\" not found in PATH. Please install it or configure the full path in agentDebate.agents.",
+  "retryingFailedAgents": "Only {0} agent(s) ready, need {1}. Retrying failed agents (attempt {2}/{3})...",
+  "notEnoughAgents": "Only {0} agent(s) started successfully, but at least {1} are required for a meaningful debate. Please check agent configurations.",
 };
 
 const zhCN: Record<MessageKeys, string> = {
@@ -44,6 +46,8 @@ const zhCN: Record<MessageKeys, string> = {
   "startup": "启动",
   "commandNotFound": "命令未找到: \"{0}\"。请检查路径或安装对应程序。",
   "commandNotInPath": "在 PATH 中找不到命令 \"{0}\"。请安装或在 agentDebate.agents 中配置完整路径。",
+  "retryingFailedAgents": "仅 {0} 个 agent 就绪，需要 {1} 个。正在重试失败的 agent（第 {2}/{3} 次）...",
+  "notEnoughAgents": "仅 {0} 个 agent 启动成功，但讨论至少需要 {1} 个。请检查 agent 配置。",
 };
 
 const bundles: Record<string, Record<string, string>> = {

@@ -18,7 +18,7 @@ interface PlanEntryState {
   status: string;
 }
 
-const STARTUP_TIMEOUT_MS = 15_000;
+const DEFAULT_STARTUP_TIMEOUT_MS = 30_000;
 
 export interface PermissionResolution {
   outcome: "selected" | "cancelled";
@@ -122,12 +122,14 @@ export class AgentConnection {
   private readonly options: AgentConnectionOptions;
   private readonly toolCalls = new Map<string, ToolCallState>();
   private readonly rpc: JsonRpcProcess;
+  private readonly startupTimeoutMs: number;
   private currentTurnBuffer = "";
   private sessionId?: string;
   private cancelled = false;
 
-  public constructor(options: AgentConnectionOptions) {
+  public constructor(options: AgentConnectionOptions, startupTimeoutMs?: number) {
     this.options = options;
+    this.startupTimeoutMs = startupTimeoutMs ?? DEFAULT_STARTUP_TIMEOUT_MS;
 
     const env = {
       ...process.env,
@@ -173,7 +175,7 @@ export class AgentConnection {
           version: "0.1.0"
         }
       },
-      STARTUP_TIMEOUT_MS
+      this.startupTimeoutMs
     );
 
     const newSession = await this.rpc.request<NewSessionResponse>(
@@ -182,7 +184,7 @@ export class AgentConnection {
         cwd: this.options.cwd,
         mcpServers: []
       },
-      STARTUP_TIMEOUT_MS
+      this.startupTimeoutMs
     );
 
     this.sessionId = newSession.sessionId;
@@ -202,12 +204,12 @@ export class AgentConnection {
 
   public async setMode(modeId: string): Promise<void> {
     if (!this.sessionId) throw new Error("No session");
-    await this.rpc.request("session/set_mode", { sessionId: this.sessionId, modeId }, STARTUP_TIMEOUT_MS);
+    await this.rpc.request("session/set_mode", { sessionId: this.sessionId, modeId }, this.startupTimeoutMs);
   }
 
   public async setConfigOption(configId: string, value: string): Promise<void> {
     if (!this.sessionId) throw new Error("No session");
-    await this.rpc.request("session/set_config_option", { sessionId: this.sessionId, configId, value }, STARTUP_TIMEOUT_MS);
+    await this.rpc.request("session/set_config_option", { sessionId: this.sessionId, configId, value }, this.startupTimeoutMs);
   }
 
   public async prompt(promptText: string): Promise<PromptResult> {

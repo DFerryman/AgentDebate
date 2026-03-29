@@ -24,6 +24,9 @@ import {
   getConfiguredAgents,
   getDefaultModerator,
   getDefaultRounds,
+  getMinAgents,
+  getStartupRetries,
+  getStartupTimeoutMs,
   getWorkspacePath,
   resolveTemplate,
   truncateText
@@ -265,6 +268,11 @@ export class DebatePanelController implements vscode.WebviewViewProvider {
         throw new Error(t("noAgentStarted"));
       }
 
+      const minAgents = getMinAgents();
+      if (readyAgents.length < minAgents) {
+        throw new Error(t("notEnoughAgents", readyAgents.length, minAgents));
+      }
+
       const allRoundOutputs = new Map<string, Map<string, string>>();
 
       // Independent proposals (no round number)
@@ -399,58 +407,93 @@ export class DebatePanelController implements vscode.WebviewViewProvider {
   private async startAgents(agentConfigs: AgentConfig[], runToken: number): Promise<Array<{ id: string; label: string; connection: AgentConnection }>> {
     this.setRound({ id: "startup", title: t("startup"), status: "running", detail: t("startingAgents") });
 
-    const results = await Promise.all(
-      agentConfigs.map(async (agent) => {
-        const connection = new AgentConnection({
-          agent, cwd: this.state.cwd,
-          onEvent: (event) => this.handleAgentEvent(agent.id, event),
-          onPermissionRequest: (context) => this.askPermission(context)
-        });
-        const cmdError = this.checkCommandAvailable(agent.command);
-        if (cmdError) {
-          this.updateAgentState(agent.id, (a) => { a.status = "error"; a.error = cmdError; });
-          this.log("error", `${agent.label}: ${cmdError}`);
-          return undefined;
-        }
+    const startupTimeoutMs = getStartupTimeoutMs();
+    const minAgents = getMinAgents();
+    const maxRetries = getStartupRetries();
 
-        this.connections.set(agent.id, connection);
-        this.updateAgentState(agent.id, (a) => { a.status = "starting"; a.info = agent.command; });
+    const readyAgents: Array<{ id: string; label: string; connection: AgentConnection }> = [];
+    let remainingConfigs = [...agentConfigs];
 
-        try {
-          const startup = await connection.start();
-          if (this.cancelRequested || runToken !== this.runToken) return undefined;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (this.cancelRequested || runToken !== this.runToken) break;
 
-          // Apply saved session config (mode, model, configOptions)
-          const sc = agent.sessionConfig;
-          if (sc) {
-            try {
-              if (sc.mode) await connection.setMode(sc.mode);
-              if (sc.configOptions) {
-                for (const [optId, val] of Object.entries(sc.configOptions)) {
-                  await connection.setConfigOption(optId, val);
-                }
-              }
-            } catch (e) {
-              this.log("info", `${agent.label}: session config apply failed: ${e instanceof Error ? e.message : String(e)}`);
-            }
+      if (attempt > 0) {
+        this.log("info", t("retryingFailedAgents", readyAgents.length, minAgents, attempt, maxRetries));
+        this.setRound({ id: "startup", title: t("startup"), status: "running", detail: t("retryingFailedAgents", readyAgents.length, minAgents, attempt, maxRetries) });
+      }
+
+      const results = await Promise.all(
+        remainingConfigs.map(async (agent) => {
+          // Dispose any previous failed connection for this agent
+          const prev = this.connections.get(agent.id);
+          if (prev) {
+            try { await prev.dispose(); } catch { /* ignore */ }
+            this.connections.delete(agent.id);
           }
 
-          this.updateAgentState(agent.id, (a) => {
-            a.status = "ready";
-            a.sessionId = startup.sessionId;
-            a.info = startup.agentInfo?.title || startup.agentInfo?.name || a.info;
-          });
-          return { id: agent.id, label: agent.label, connection };
-        } catch (error) {
-          const msg = error instanceof Error ? error.message : String(error);
-          this.updateAgentState(agent.id, (a) => { a.status = "error"; a.error = msg; });
-          this.log("error", `${agent.label} failed: ${msg}`);
-          return undefined;
-        }
-      })
-    );
+          const connection = new AgentConnection({
+            agent, cwd: this.state.cwd,
+            onEvent: (event) => this.handleAgentEvent(agent.id, event),
+            onPermissionRequest: (context) => this.askPermission(context)
+          }, startupTimeoutMs);
+          const cmdError = this.checkCommandAvailable(agent.command);
+          if (cmdError) {
+            this.updateAgentState(agent.id, (a) => { a.status = "error"; a.error = cmdError; });
+            this.log("error", `${agent.label}: ${cmdError}`);
+            return undefined;
+          }
 
-    const readyAgents = results.filter((r): r is { id: string; label: string; connection: AgentConnection } => Boolean(r));
+          this.connections.set(agent.id, connection);
+          this.updateAgentState(agent.id, (a) => { a.status = "starting"; a.info = agent.command; a.error = undefined; });
+
+          try {
+            const startup = await connection.start();
+            if (this.cancelRequested || runToken !== this.runToken) return undefined;
+
+            // Apply saved session config (mode, model, configOptions)
+            const sc = agent.sessionConfig;
+            if (sc) {
+              try {
+                if (sc.mode) await connection.setMode(sc.mode);
+                if (sc.configOptions) {
+                  for (const [optId, val] of Object.entries(sc.configOptions)) {
+                    await connection.setConfigOption(optId, val);
+                  }
+                }
+              } catch (e) {
+                this.log("info", `${agent.label}: session config apply failed: ${e instanceof Error ? e.message : String(e)}`);
+              }
+            }
+
+            this.updateAgentState(agent.id, (a) => {
+              a.status = "ready";
+              a.sessionId = startup.sessionId;
+              a.info = startup.agentInfo?.title || startup.agentInfo?.name || a.info;
+            });
+            return { id: agent.id, label: agent.label, connection };
+          } catch (error) {
+            const msg = error instanceof Error ? error.message : String(error);
+            this.updateAgentState(agent.id, (a) => { a.status = "error"; a.error = msg; });
+            this.log("error", `${agent.label} failed: ${msg}`);
+            return undefined;
+          }
+        })
+      );
+
+      const succeeded = results.filter((r): r is { id: string; label: string; connection: AgentConnection } => Boolean(r));
+      readyAgents.push(...succeeded);
+
+      // Check if we have enough agents
+      if (readyAgents.length >= minAgents) break;
+
+      // Build list of configs that still need retrying (exclude those that succeeded)
+      const succeededIds = new Set(succeeded.map((r) => r.id));
+      remainingConfigs = remainingConfigs.filter((c) => !succeededIds.has(c.id));
+
+      // If no configs left to retry, stop
+      if (remainingConfigs.length === 0) break;
+    }
+
     this.finishRound("startup", readyAgents.length ? "done" : "error", readyAgents.length ? "ready" : "failed");
     return readyAgents;
   }

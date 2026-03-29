@@ -289,19 +289,12 @@ export class DebatePanelController implements vscode.WebviewViewProvider {
 
         const roundId = `round${i + 1}`;
         if (readyAgents.length > 1) {
-          const participantsWithOutput = readyAgents.filter((agent) => {
-            for (const outputs of allRoundOutputs.values()) {
-              if (outputs.has(agent.id)) {
-                return true;
-              }
-            }
-            return false;
-          });
-
+          // Include all ready agents — agents that failed a single round
+          // (e.g. due to permission denial) should still participate in subsequent rounds.
           const roundOutputs = await this.runRound(
             currentRunToken,
             { id: roundId, title: t("crossReview", i), status: "running", detail: t("crossReviewDetail", i) },
-            participantsWithOutput,
+            readyAgents,
             (agent) => this.buildCrossEvalPrompt(trimmedTopic, agent, i + 1, allRoundOutputs)
           );
           allRoundOutputs.set(roundId, roundOutputs);
@@ -475,8 +468,21 @@ export class DebatePanelController implements vscode.WebviewViewProvider {
         this.updateAgentState(p.id, (a) => { a.status = "running"; a.liveOutput = ""; a.error = undefined; });
         try {
           const result = await p.connection.prompt(buildPrompt(p));
-          if (this.cancelRequested || runToken !== this.runToken || result.stopReason === "cancelled") {
+          if (this.cancelRequested || runToken !== this.runToken) {
             this.updateAgentState(p.id, (a) => { a.status = "cancelled"; a.liveOutput = ""; });
+            return;
+          }
+          if (result.stopReason === "cancelled") {
+            // Agent-side cancel (e.g. permission denied) — not a full debate cancellation.
+            // Save any partial output so the agent can still participate in subsequent rounds.
+            const text = result.text?.trim();
+            if (text) {
+              outputs.set(p.id, text);
+              this.updateAgentState(p.id, (a) => { a.status = "ready"; a.liveOutput = ""; a.roundOutputs[round.id] = text; });
+            } else {
+              this.updateAgentState(p.id, (a) => { a.status = "ready"; a.liveOutput = ""; });
+              this.log("info", `${p.label}: prompt cancelled (permission denied?), will retry in next round`);
+            }
             return;
           }
           outputs.set(p.id, result.text || "(empty)");
